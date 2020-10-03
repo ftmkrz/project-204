@@ -6,8 +6,7 @@ pipeline{
         APP_REPO_NAME = "fatma-repo/phonebook-app"
         AWS_REGION = "us-east-1"
     }
-
-    stages {
+stages {
         stage("Create ECR Repo") {
             steps {
             echo "Creating ECR Repository"
@@ -52,7 +51,6 @@ pipeline{
         }
         failure {
             echo "Deleting the image repository on ECR due to failure""
-            echo "Deleting the cloudformation steck due to failure"
         }
     }
 }
