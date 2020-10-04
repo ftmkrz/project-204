@@ -1,7 +1,7 @@
 pipeline{
     agent { label "master" }
     environment {
-        ECR_REGISTRY = "744261147378.dkr.ecr.us-east-1.amazonaws.com/"
+        ECR_REGISTRY = "744261147378.dkr.ecr.us-east-1.amazonaws.com"
         APP_REPO_NAME = "fatma-repo/phonebook-app"
         AWS_REGION = "us-east-1"
     }
