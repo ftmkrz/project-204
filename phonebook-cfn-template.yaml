@@ -1,51 +1,45 @@
 AWSTemplateFormatVersion: 2010-09-09
+
 Description: |
-This project aims to create a Jenkins pipeline to deploy the Phonebook Application web application 
-with Docker Swarm on Elastic Compute Cloud (EC2) Instances by pulling the app images from the 
-AWS Elastic Container Registry (ECR) repository.
+  This Cloudformation template creates a phonebook application web application developed in Python Flask , deployed with Docker Swarm on Elastic Compute Cloud (EC2) Instances by pulling the app images from the AWS Elastic Container Registry (ECR) repository
 
 Parameters:
   KeyPairName:
     Description: Enter name of your key pair for SSH Connections
     Type: AWS::EC2::KeyPair::KeyName
     ConstraintDescription: Must be one of the existing KeyPairs 
-  
+
 Resources:
   InstanceConnectPolicy:
     Type: "AWS::IAM::ManagedPolicy"
     Properties:
-      PolicyDocument: Json #required
+      PolicyDocument:  #required
         Version: 2012-10-17
-        Statement: 
-          - Effect: Allow 
-          Action: 
-            - ec2-instance-connect:SendSSHPublicKey
-          Resource: 
-            - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:instance/* 
-          Condition: {"StringEquals": {"aws:ResourceTag/project":"203"}} 
-          - Effect: Allow 
+        Statement:
+          - Effect: Allow
             Action: 
-              - ec2:DescribeInstances 
+              - ec2-instance-connect:SendSSHPublicKey
+            Resource:
+              - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:instance/*
+            Condition: {"StringEquals": {"aws:ResourceTag/project":"203"}}
+          - Effect: Allow
+            Action:
+              - ec2:DescribeInstances
             Resource: "*"
   EC2ConnectRole:
     Type: "AWS::IAM::Role"
     Properties:
-      AssumeRolePolicyDocument: Json #required
-        Statement: 
-          - Effect: Allow 
-            Principal: 
-              Service: 
-              - ec2.amazonaws.com 
-            Action: 
-              - 'sts:AssumeRole' 
-      ManagedPolicyArns: 
-        - !Ref InstanceConnectPolicy 
+      AssumeRolePolicyDocument: #required
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - !Ref InstanceConnectPolicy
         - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess
-  EC2ConnectProfile:
-    Type: "AWS::IAM::InstanceProfile" 
-    Properties: 
-      Roles: #required 
-        - !Ref EC2ConnectRole 
   EC2ConnectProfile:
     Type: "AWS::IAM::InstanceProfile"
     Properties:
@@ -83,7 +77,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 8080
           ToPort: 8080
-          CidrIp: 0.0.0.0/0 
+          CidrIp: 0.0.0.0/0
   ManagersLT:
     Type: "AWS::EC2::LaunchTemplate"
     Properties:
@@ -116,7 +110,7 @@ Resources:
               yum install amazon-ecr-credential-helper -y
               mkdir -p /home/ec2-user/.docker
               cd /home/ec2-user/.docker
-              echo '{"credsStore": "ecr-login"}' > config.json         
+              echo '{"credsStore": "ecr-login"}' > config.json
   WorkersLT:
     Type: "AWS::EC2::LaunchTemplate"
     Properties:
@@ -149,7 +143,7 @@ Resources:
               yum install amazon-ecr-credential-helper -y
               mkdir -p /home/ec2-user/.docker
               cd /home/ec2-user/.docker
-              echo '{"credsStore": "ecr-login"}' > config.json 
+              echo '{"credsStore": "ecr-login"}' > config.json
   DockerManager1:
     Type: "AWS::EC2::Instance"
     Properties:
@@ -163,39 +157,36 @@ Resources:
         - Key: Name
           Value: !Sub Docker Grand Master of ${AWS::StackName}
         - Key: project
-          Value: "203"
+          Value: "p204"
+        - Key: server
+          Value: docker-grand-master
       UserData:
-        Fn::Base64: 
-          !Sub 
-            - |
-              #! /bin/bash
-              yum update -y
-              hostnamectl set-hostname Grand-Master
-              amazon-linux-extras install docker -y
-              systemctl start docker
-              systemctl enable docker
-              usermod -a -G docker ec2-user
-              curl -L "https://github.com/docker/compose/releases/download/1.26.2/docker-compose-$(uname -s)-$(uname -m)" \
-              -o /usr/local/bin/docker-compose
-              chmod +x /usr/local/bin/docker-compose
-              docker swarm init
-              docker service create \
-                --name=viz \
-                --publish=8080:8080/tcp \
-                --constraint=node.role==manager \
-                --mount=type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock \
-                dockersamples/visualizer
-              yum install git -y
-              curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-              unzip awscliv2.zip
-              ./aws/install
-              yum install amazon-ecr-credential-helper -y
-              mkdir -p /home/ec2-user/.docker
-              cd /home/ec2-user/.docker
-              echo '{"credsStore": "ecr-login"}' > config.json
-            - ECR_REGISTRY: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
-              APP_REPO_NAME: clarusway-repo/phonebook-app
-              GITHUB_REPO: https://github.com/callahan-cw/project-203.git
+        Fn::Base64: |
+          #! /bin/bash
+          yum update -y
+          hostnamectl set-hostname Grand-Master
+          amazon-linux-extras install docker -y
+          systemctl start docker
+          systemctl enable docker
+          usermod -a -G docker ec2-user
+          curl -L "https://github.com/docker/compose/releases/download/1.26.2/docker-compose-$(uname -s)-$(uname -m)" \
+          -o /usr/local/bin/docker-compose
+          chmod +x /usr/local/bin/docker-compose
+          docker swarm init
+          yum install git -y
+          docker service create \
+            --name=viz \
+            --publish=8080:8080/tcp \
+            --constraint=node.role==manager \
+            --mount=type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock \
+            dockersamples/visualizer
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          ./aws/install
+          yum install amazon-ecr-credential-helper -y
+          mkdir -p /home/ec2-user/.docker
+          cd /home/ec2-user/.docker
+          echo '{"credsStore": "ecr-login"}' > config.json
   DockerManager2:
     Type: "AWS::EC2::Instance"
     DependsOn:
@@ -208,7 +199,7 @@ Resources:
         - Key: Name
           Value: !Sub Docker Manager 2 of ${AWS::StackName}
         - Key: project
-          Value: "203"
+          Value: "p204"
   DockerManager3:
     Type: "AWS::EC2::Instance"
     DependsOn:
@@ -221,11 +212,11 @@ Resources:
         - Key: Name
           Value: !Sub Docker Manager 3 of ${AWS::StackName}
         - Key: project
-          Value: "203"
+          Value: "p204"
   DockerWorker1:
     Type: "AWS::EC2::Instance"
     DependsOn:
-        - DockerManager1
+        - DockerManager2
     Properties:
       LaunchTemplate:
         LaunchTemplateId: !Ref WorkersLT
@@ -234,7 +225,7 @@ Resources:
         - Key: Name
           Value: !Sub Docker Worker 1 of ${AWS::StackName}
         - Key: project
-          Value: "203"
+          Value: "p204"
   DockerWorker2:
     Type: "AWS::EC2::Instance"
     DependsOn:
@@ -247,8 +238,7 @@ Resources:
         - Key: Name
           Value: !Sub Docker Worker 2 of ${AWS::StackName}
         - Key: project
-          Value: "203" 
-  
+          Value: "p204"
 Outputs:
   VizDashboard:
     Description: Dashboard URL
@@ -279,4 +269,4 @@ Outputs:
     Description: Docker Worker 2nd DNS Name
     Value: !Sub 
       - ${PublicAddress}
-      - PublicAddress: !GetAtt DockerWorker2.PublicDnsName 
+      - PublicAddress: !GetAtt DockerWorker2.PublicDnsName
