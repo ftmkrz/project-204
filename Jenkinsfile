@@ -7,7 +7,7 @@ pipeline{
         APP_REPO_NAME = "fatma-repo/phonebook-app"
         AWS_REGION = "us-east-1"
         AWS_STACK_NAME = "Call-Phonebook-App-${BUILD_NUMBER}"
-        CFN_KEYPAIR = "cherry.pem"
+        CFN_KEYPAIR = "cherry"
         HOME_FOLDER = "/home/ec2-user"
         GIT_FOLDER = sh(script:'echo ${GIT_URL} | sed "s/.*\\///;s/.git$//"', returnStdout:true).trim()
         PATH=sh(script:"echo $PATH:/usr/local/bin", returnStdout:true).trim()
